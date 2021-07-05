@@ -14,6 +14,7 @@ using System.Windows.Media;
 
 namespace RegexTestForQuicker
 {
+    //Add some comment
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
     /// </summary>
