@@ -1,18 +1,24 @@
 ﻿using Microsoft.Practices.Prism.Commands;
 using Microsoft.Practices.Prism.ViewModel;
+using RegexTestForQuicker.Models;
+using RegexTestForQuicker.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+
 
 namespace RegexTestForQuicker.ViewModel
 {
     class MainWindowViewModel : NotificationObject
     {
-        public DelegateCommand ExecuteRegexMatch;
+
+        public List<RegexModes> PopupItems { get; set; }
+
+        public RegexOptions SelectedRegexOptions { get; set; }  //Regex options user selected
+        public DelegateCommand ExecuteRegexMatch { get; set; }
+
         //正则表达式
         private string _pattern;
         public string Pattern
@@ -43,52 +49,20 @@ namespace RegexTestForQuicker.ViewModel
             }
         }
 
-        //结果
-        private string _result;
-        public string Result
+        //Display in the result ListBox 
+        private ObservableCollection<MatchItem> _ResultList;
+        public ObservableCollection<MatchItem> ResultList
         {
-            get
-            {
-                return _result;
-            }
+            get { return _ResultList; }
             set
             {
-                _result = value;
-                RaisePropertyChanged("Result");
-            }
-        }
-
-        //结果列表
-        private List<string> _matchesList;
-        public List<string> MatchesList
-        {
-            get { return _matchesList; }
-            set
-            {
-                _matchesList = value;
-                RaisePropertyChanged("MatchesList");
-            }
-        }
-
-
-        //选项
-        //正则匹配模式选项
-        private List<RegexOptionItem> _regexOptions;
-        public List<RegexOptionItem> RegexOptionItems
-        {
-            get
-            {
-                return _regexOptions;
-            }
-            set
-            {
-                _regexOptions = value;
-                RaisePropertyChanged("RegexOptionItems");
+                _ResultList = value;
+                RaisePropertyChanged("ResultList");
             }
         }
 
         //是否显示全部匹配项
-        private bool _showAllMatches;
+        private bool _showAllMatches = true;
         public bool ShowAllMatches
         {
             get
@@ -103,41 +77,85 @@ namespace RegexTestForQuicker.ViewModel
         }
 
 
-       public MainWindowViewModel()
+        public MainWindowViewModel()
         {
-            LoadRegexOptions();
-            ShowAllMatches = false;
             ExecuteRegexMatch = new DelegateCommand(new Action(RegexMatch));
+            PopupItems = LoadRegexOptions();
         }
 
-        public void LoadRegexOptions()
+        public List<RegexModes> LoadRegexOptions()
         {
-            List<RegexOptionItem> RegexOptionItems = new List<RegexOptionItem>();
-            RegexOptionItems.Add(new RegexOptionItem() { op = RegexOptions.Singleline });
-            RegexOptionItems.Add(new RegexOptionItem() { op = RegexOptions.Multiline });
-            RegexOptionItems.Add(new RegexOptionItem() { op = RegexOptions.IgnoreCase });
+            List<RegexModes> ops = new List<RegexModes>();
+            RegexModes op1 = new RegexModes("Ignorecase", RegexOptions.IgnoreCase, "忽略字母大小写",true);
+            RegexModes op2 = new RegexModes("SingleLine", RegexOptions.Singleline, "此模式下英文句号“.”可以匹配换行符\\n，未开启则不能");
+            RegexModes op3 = new RegexModes("MultiLine", RegexOptions.Multiline, "此模式下“^”和“$”可以分别匹配段首和段尾，未开启则匹配整个字符串首尾");
+            ops.Add(op1);
+            ops.Add(op2);
+            ops.Add(op3);
+            return ops;
         }
-
+        //实行正则匹配
         public void RegexMatch()
         {
-            //显示所以匹配的内容
-            if (ShowAllMatches)
+            if (String.IsNullOrEmpty(Input) || String.IsNullOrEmpty(Pattern))
             {
-                MatchCollection matches = Regex.Matches(this.Input, this.Pattern, 0);
-                for (int i = 0; i < matches.Count; i++)
+                return;
+            }
+
+            ObservableCollection<MatchItem> temp = new ObservableCollection<MatchItem>();
+            //Input = EditorDocument.Text;
+            try
+            {
+                GetRegxOptions();
+                MatchCollection matches = Regex.Matches(this.Input, this.Pattern, SelectedRegexOptions);
+                if (matches.Count != 0)
                 {
-                    string content = $"匹配{i + 1}：{matches[i].Value}\r\n";
-                    MatchesList.Add(content);
+                    if (ShowAllMatches)
+                    {
+                        for (int i = 0; i < matches.Count; i++)
+                        {
+                            string index = $"匹配{i + 1}：";
+                            temp.Add(new MatchItem(index, matches[i].Value));
+                        }
+                    }
+                    else
+                    {
+                        temp.Add(new MatchItem("匹配1：", matches[0].Value));
+                    }
                 }
             }
-            //只匹配第一项
-            else
+            //捕获异常
+            catch (ArgumentException err)
             {
-                string match = Regex.Match(this.Input, this.Pattern, 0).Value;
-                string content = $"匹配1：{match}";
-                //MatchesList.Add(content);
-                Result = content;
+                string item = "正则解析出错：" + err.Message.Replace("正在分析", "");
+                temp.Add(new MatchItem("Error:", item));
             }
+
+            catch (RegexMatchTimeoutException err)
+            {
+                string item = "正则匹配超时：" + err.Message;
+                temp.Add(new MatchItem("Error:", item));
+            }
+
+            finally
+            {
+                ResultList = temp; //触发ResultList的RaisePropertyChanged
+            }
+
         }
+
+        public void GetRegxOptions()
+        {
+            RegexOptions ops = 0;
+            var optionsList = PopupItems.Where(x => x.IsSelected).Select(x => x.Option);
+            foreach (var op in optionsList)
+            {
+                ops = ops | op;
+            }
+            SelectedRegexOptions = ops;
+        }
+
+
+
     }
 }
