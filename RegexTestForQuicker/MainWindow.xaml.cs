@@ -13,13 +13,13 @@ using System.Windows.Media;
 
 namespace RegexTestForQuicker
 {
-    //Add some comment
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
     /// </summary>
     public partial class MainWindow : System.Windows.Window
     {
-        private readonly ToastMessagesViewModel _tmvm;
+        private readonly ToastMessagesViewModel _tmvm; //Toast Message Model
+        //private readonly SearchReplaceResultBackgroundRenderer _render; //TextEditor BackgroundRender
         public MainWindow()
         {
             InitializeComponent();
@@ -29,13 +29,16 @@ namespace RegexTestForQuicker
             _tmvm = new ToastMessagesViewModel();
             Unloaded += OnUnloaded;
 
-            //RegexListBox.ItemsSource = LoadRegexOptions();
+            //_render = new SearchReplaceResultBackgroundRenderer();
+            //this.input.TextArea.TextView.BackgroundRenderers.Add(_render);
+
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             _tmvm.OnUnloaded();
         }
+
 
         // Highltight all matches string in texteditor when results changed
         public void HighlightMatches(Object sender, PropertyChangedEventArgs e)
@@ -44,15 +47,17 @@ namespace RegexTestForQuicker
             if (e.PropertyName != "ResultList") return;
 
             this.input.TextArea.TextView.BackgroundRenderers.Clear();
-            var render = new SearchReplaceResultBackgroundRenderer();
-            this.input.TextArea.TextView.BackgroundRenderers.Add(render);
+            var _render = new SearchReplaceResultBackgroundRenderer();
+            this.input.TextArea.TextView.BackgroundRenderers.Add(_render);
+
+            //_render.CurrentResults?.Clear();
             try
             {
                 var results = Regex.Matches(this.input.Text, pattern.Text,
                 (sender as MainWindowViewModel).SelectedRegexOptions).OfType<Match>().Select(m => new Results(m));
                 foreach (var r in results)
                 {
-                    render.CurrentResults.Add(r);
+                    _render.CurrentResults.Add(r);
                 }
             }
             catch { }
@@ -64,7 +69,8 @@ namespace RegexTestForQuicker
         {
             private Brush _markerBrush;
             private Pen _markerPen;
-
+            private Brush _markerBrush2;
+            private Pen _markerPen2;
             public List<ISearchResult> CurrentResults { get; } = new List<ISearchResult>();
 
             public KnownLayer Layer => KnownLayer.Selection;
@@ -73,6 +79,8 @@ namespace RegexTestForQuicker
             {
                 _markerBrush = Brushes.LightGreen;
                 _markerPen = new Pen(_markerBrush, 1);
+                _markerBrush2 = Brushes.LightSkyBlue;
+                _markerPen2 = new Pen(_markerBrush2, 1);
             }
 
             public Brush MarkerBrush
@@ -102,8 +110,14 @@ namespace RegexTestForQuicker
                 var viewStart = visualLines.First().FirstDocumentLine.Offset;
                 var viewEnd = visualLines.Last().LastDocumentLine.EndOffset;
 
-                foreach (var result in CurrentResults.Where(r => viewStart <= r.Offset && r.Offset <= viewEnd || viewStart <= r.EndOffset && r.EndOffset <= viewEnd))
+               
+                int currentBrush = 1;  //1 for lightGreen and 2 for blue
+                List<ISearchResult> ResultsInView = CurrentResults.Where(r => viewStart <= r.Offset 
+                && r.Offset <= viewEnd || viewStart <= r.EndOffset && r.EndOffset <= viewEnd).ToList();
+                
+                for (int i = 0; i < ResultsInView.Count(); i++)
                 {
+                    var result = ResultsInView[i];
                     var geoBuilder = new BackgroundGeometryBuilder
                     {
                         //BorderThickness = markerPen != null ? markerPen.Thickness : 0,
@@ -112,13 +126,40 @@ namespace RegexTestForQuicker
                     };
                     geoBuilder.AddSegment(textView, result);
                     var geometry = geoBuilder.CreateGeometry();
+
                     if (geometry != null)
                     {
-                        drawingContext.DrawGeometry(_markerBrush, _markerPen, geometry);
+                        //if the adjcent match result stay together,using different color to mark
+                        if (i > 0 && result.Offset == ResultsInView[i - 1].EndOffset)
+                        {
+                            switch (currentBrush)
+                            {
+                                case 1:
+                                    drawingContext.DrawGeometry(_markerBrush2, _markerPen2, geometry);
+                                    currentBrush = 2;
+                                    break;
+
+                                case 2:
+                                    drawingContext.DrawGeometry(_markerBrush, _markerPen, geometry);
+                                    currentBrush = 1;
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            drawingContext.DrawGeometry(_markerBrush, _markerPen, geometry);
+                            currentBrush = 1;
+                        }
+                        
                     }
+                    
                 }
             }
         }
+
 
         //copy match value when right click on some item
         private void CopyResult(object sender, System.Windows.Input.MouseButtonEventArgs e)

@@ -13,9 +13,29 @@ namespace RegexTestForQuicker.ViewModel
 {
     class MainWindowViewModel : NotificationObject
     {
+        private ObservableCollection<RegexModes> _popupItems;
+        public ObservableCollection<RegexModes> PopupItems
+        {
+            get
+            { return _popupItems; }
+            set
+            {
+                _popupItems = value;
+                RaisePropertyChanged("PopupItems");
+            }
+        }
 
-        public List<RegexModes> PopupItems { get; set; }
+        private string _flags;
 
+        public string Flags
+        {
+            get { return _flags; }
+            set
+            {
+                _flags = value;
+                RaisePropertyChanged("Flags");
+            }
+        } 
         public RegexOptions SelectedRegexOptions { get; set; }  //Regex options user selected
         public DelegateCommand ExecuteRegexMatch { get; set; }
 
@@ -83,10 +103,10 @@ namespace RegexTestForQuicker.ViewModel
             PopupItems = LoadRegexOptions();
         }
 
-        public List<RegexModes> LoadRegexOptions()
+        public ObservableCollection<RegexModes> LoadRegexOptions()
         {
-            List<RegexModes> ops = new List<RegexModes>();
-            RegexModes op1 = new RegexModes("Ignorecase", RegexOptions.IgnoreCase, "忽略字母大小写",true);
+            ObservableCollection<RegexModes> ops = new ObservableCollection<RegexModes>();
+            RegexModes op1 = new RegexModes("Ignorecase", RegexOptions.IgnoreCase, "忽略字母大小写", true);
             RegexModes op2 = new RegexModes("SingleLine", RegexOptions.Singleline, "此模式下英文句号“.”可以匹配换行符\\n，未开启则不能");
             RegexModes op3 = new RegexModes("MultiLine", RegexOptions.Multiline, "此模式下“^”和“$”可以分别匹配段首和段尾，未开启则匹配整个字符串首尾");
             ops.Add(op1);
@@ -94,19 +114,24 @@ namespace RegexTestForQuicker.ViewModel
             ops.Add(op3);
             return ops;
         }
+
+
         //实行正则匹配
+        ObservableCollection<MatchItem> temp;
         public void RegexMatch()
         {
-            if (String.IsNullOrEmpty(Input) || String.IsNullOrEmpty(Pattern))
+            GetRegxOptions(); //get the RegexOptions
+
+            if (String.IsNullOrEmpty(Pattern))
             {
                 return;
             }
-
-            ObservableCollection<MatchItem> temp = new ObservableCollection<MatchItem>();
-            //Input = EditorDocument.Text;
+            
+            temp = temp ?? new ObservableCollection<MatchItem>();
+            temp.Clear();
+            //ObservableCollection<MatchItem> temp = new ObservableCollection<MatchItem>();
             try
-            {
-                GetRegxOptions();
+            {               
                 MatchCollection matches = Regex.Matches(this.Input, this.Pattern, SelectedRegexOptions);
                 if (matches.Count != 0)
                 {
@@ -147,12 +172,31 @@ namespace RegexTestForQuicker.ViewModel
         public void GetRegxOptions()
         {
             RegexOptions ops = 0;
-            var optionsList = PopupItems.Where(x => x.IsSelected).Select(x => x.Option);
-            foreach (var op in optionsList)
+            var selectedItems = PopupItems.Where(x => x.IsSelected);
+            foreach (var op in selectedItems.Select(x => x.Option))
             {
                 ops = ops | op;
             }
             SelectedRegexOptions = ops;
+
+            var flags = "";
+            foreach (RegexModes item in selectedItems)
+            {
+                //RegexModes item = (RegexModes)ob;
+                if (item.Mark == "SingleLine")
+                {
+                    flags += "S";
+                }
+                if (item.Mark == "MultiLine")
+                {
+                    flags += "M";
+                }
+                if (item.Mark == "Ignorecase")
+                {
+                    flags += "I";
+                }
+            }
+            Flags = flags;
         }
 
 

@@ -11,8 +11,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:RegexTestForQuicker.Models"
     Title="RegexTest4C#"
+    WindowStartupLocation="CenterScreen"
     Width="600"
     Height="700"
+    MinHeight="400"
     Background="AliceBlue"
     Icon="/Fonts/正则表达式 (2).png"
     mc:Ignorable="d">
@@ -60,11 +62,11 @@
 
                 </Grid>
 
-                <Grid>
+                <Grid> 
                     <TextBox
                         x:Name="pattern"
-                        Height="30"
                         Padding="5"
+                        TextWrapping="Wrap"
                         FontFamily="Consolas"
                         FontSize="16"
                         Text="{Binding Path=Pattern, UpdateSourceTrigger=PropertyChanged}">
@@ -80,8 +82,10 @@
                         Orientation="Horizontal">
                         <TextBlock
                             VerticalAlignment="Center"
-                            FontFamily="TimesNewRoman"
-                            Text="{Binding UpdateSourceTrigger=PropertyChanged, ElementName=RegexListBox, Path=SelectedItems, Converter={StaticResource Regex2String}}" />
+                            FontFamily="Consolas"
+                            FontWeight="Bold"
+                            Text="{Binding Flags, UpdateSourceTrigger=PropertyChanged}">
+                        </TextBlock>
 
                         <ToggleButton
                             x:Name="tb"
@@ -99,12 +103,12 @@
                         <Popup
                             x:Name="Popup"
                             AllowsTransparency="True"
-                            HorizontalOffset="-80"
+                            HorizontalOffset="-0"
                             IsOpen="{Binding ElementName=tb, Path=IsChecked}"
                             Placement="Bottom"
                             PlacementTarget="{Binding ElementName=tb}"
                             StaysOpen="False"
-                            VerticalOffset="-50">
+                            VerticalOffset="-0">
                             <Border
                                 Background="#FFF7F7F7"
                                 BorderThickness="2"
@@ -124,6 +128,7 @@
 
                                     <ListBox
                                         x:Name="RegexListBox"
+                                        Style="{StaticResource MyListBoxStyle}"
                                         Margin="0,0,0,10"
                                         Background="#FFF7F7F7"
                                         BorderThickness="0"
@@ -169,8 +174,8 @@
 
                                             </DataTemplate>
                                         </ListBox.ItemTemplate>
-                                        <ListBox.ItemContainerStyle>
-                                            <Style TargetType="{x:Type ListBoxItem}">
+                                        <!--<ListBox.ItemContainerStyle>-->
+                                            <!--<Style TargetType="{x:Type ListBoxItem}">
                                                 <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                                                 <Style.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
@@ -178,14 +183,15 @@
                                                     </Trigger>
                                                 </Style.Triggers>
 
-                                            </Style>
-                                        </ListBox.ItemContainerStyle>
+                                            </Style>-->
+                                        <!--</ListBox.ItemContainerStyle>-->
                                         <i:Interaction.Triggers>
                                             <i:EventTrigger EventName="SelectionChanged">
                                                 <i:InvokeCommandAction Command="{Binding ExecuteRegexMatch}" />
                                             </i:EventTrigger>
                                         </i:Interaction.Triggers>
                                     </ListBox>
+
                                 </StackPanel>
                             </Border>
                         </Popup>

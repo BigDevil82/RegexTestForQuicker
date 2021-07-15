@@ -25,6 +25,7 @@ namespace RegexTestForQuicker.Views
         {
             InitializeComponent();
             RegexListBox.ItemsSource = LoadRegexOptions();
+            listbox3.ItemsSource = LoadRegexOptions();
             Deactivated += SelectRegexModes_Deactivated;
         }
 

@@ -1,6 +1,8 @@
 ﻿using RegexTestForQuicker.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -13,11 +15,15 @@ namespace RegexTestForQuicker.Converter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            IList<object> items = ((IList<object>)value);
+            if (value == null) return null;
+
+            //return ((RegexModes)value).Mark + "asd";
+            ObservableCollection<RegexModes> items = (ObservableCollection<RegexModes>)value;
+            var optionsList = items.Where(x => x.IsSelected);
             string flag = "";
-            foreach (var ob in items)
+            foreach (RegexModes item in optionsList)
             {
-                RegexModes item = (RegexModes)ob;
+                //RegexModes item = (RegexModes)ob;
                 if (item.Mark == "SingleLine")
                 {
                     flag += "S";
